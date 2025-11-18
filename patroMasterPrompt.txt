@@ -1,0 +1,3 @@
+**Project Context: PatroSmartController**
+
+This is an automated BLE gamepad built on the ESP32, designed to execute user-defined macros (sequences of button presses and durations) for in-game automation. Configuration is managed wirelessly via a Wi-Fi Access Point that serves a captive portal web interface, allowing users to define and save macros. The project is developed in C++ using the Arduino framework on PlatformIO, and it features two main operational modes: BLE Gamepad mode for execution and Wi-Fi mode for setup.
