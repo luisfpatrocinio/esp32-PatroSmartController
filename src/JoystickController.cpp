@@ -9,37 +9,66 @@ bool joystick_is_connected() { return bleGamepad.isConnected(); }
 
 void joystick_run_macro(const std::vector<MacroStep> &sequence, bool isRunning)
 {
-    static int stepIndex = 0;
-    static unsigned long lastStepTime = 0;
-    static bool isPressing = false;
+    // Macro machine states
+    enum class MacroState
+    {
+        IDLE,
+        PRESSING,
+        WAITING_BETWEEN_STEPS
+    };
 
+    static MacroState state = MacroState::IDLE;
+    static int stepIndex = 0;
+    static unsigned long stateStartTime = 0;
+    const int DELAY_BETWEEN_STEPS_MS = 50; // Tempo de espera entre os passos da macro
+
+    // Condições de reset: macro pausada, desconectado, ou sequência vazia
     if (!isRunning || !bleGamepad.isConnected() || sequence.empty())
     {
-        isPressing = false;
-        stepIndex = 0;
+        if (state != MacroState::IDLE)
+        {
+            bleGamepad.releaseAll(); // Garante que todos os botões sejam soltos
+            state = MacroState::IDLE;
+            stepIndex = 0;
+        }
         return;
     }
 
     unsigned long now = millis();
     MacroStep currentStep = sequence[stepIndex];
 
-    if (!isPressing)
+    switch (state)
     {
+    case MacroState::IDLE:
+        // Inicia o primeiro passo
         bleGamepad.press(currentStep.button);
-        isPressing = true;
-        lastStepTime = now;
-    }
-    else
-    {
-        if (now - lastStepTime >= currentStep.duration)
+        state = MacroState::PRESSING;
+        stateStartTime = now;
+        break;
+
+    case MacroState::PRESSING:
+        // Verifica se o tempo de pressionamento já passou
+        if (now - stateStartTime >= currentStep.duration)
         {
             bleGamepad.release(currentStep.button);
-            isPressing = false;
-            lastStepTime = now;
+            state = MacroState::WAITING_BETWEEN_STEPS;
+            stateStartTime = now;
+        }
+        break;
+
+    case MacroState::WAITING_BETWEEN_STEPS:
+        // Verifica se o tempo de espera entre os passos já passou
+        if (now - stateStartTime >= DELAY_BETWEEN_STEPS_MS)
+        {
+            // Avança para o próximo passo
             stepIndex++;
             if (stepIndex >= sequence.size())
-                stepIndex = 0;
-            delay(30);
+            {
+                stepIndex = 0; // Reinicia a macro
+            }
+            // Prepara para pressionar o próximo botão no próximo ciclo
+            state = MacroState::IDLE;
         }
+        break;
     }
 }

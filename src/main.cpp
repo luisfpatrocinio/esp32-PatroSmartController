@@ -17,6 +17,9 @@ void setup()
     Serial.begin(115200);
     pinMode(LED_PIN, OUTPUT);
     input_init();
+
+    web_load_default_sequence();
+
     joystick_init();
     Serial.println("--- PatroSmartController Iniciado ---");
 }
