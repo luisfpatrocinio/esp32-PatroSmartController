@@ -27,7 +27,13 @@ void joystick_run_macro(const std::vector<MacroStep> &sequence, bool isRunning)
     {
         if (state != MacroState::IDLE)
         {
-            bleGamepad.releaseAll(); // Garante que todos os botões sejam soltos
+            // A biblioteca não tem releaseAll(), então liberamos os botões manualmente.
+            // Para este projeto, apenas o botão atual estaria pressionado,
+            // mas por segurança, podemos liberar todos os botões usados.
+            for (const auto &step : sequence)
+            {
+                bleGamepad.release(step.button);
+            }
             state = MacroState::IDLE;
             stepIndex = 0;
         }
